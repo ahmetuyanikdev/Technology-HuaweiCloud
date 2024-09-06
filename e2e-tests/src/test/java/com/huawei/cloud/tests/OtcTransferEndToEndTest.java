@@ -25,13 +25,11 @@ import io.restassured.http.ContentType;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
-import org.eclipse.edc.connector.controlplane.test.system.utils.Participant;
-import org.eclipse.edc.connector.controlplane.transfer.spi.types.TransferProcessStates;
 import org.eclipse.edc.connector.dataplane.spi.Endpoint;
 import org.eclipse.edc.connector.dataplane.spi.iam.PublicEndpointGeneratorService;
 import org.eclipse.edc.junit.extensions.EdcClassRuntimesExtension;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,7 +38,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -66,7 +63,7 @@ public class OtcTransferEndToEndTest {
             .apiKey("password")
             .build();
 
-    private static final Duration TIMEOUT = Duration.ofMinutes(1);
+    private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final String OBS_OTC_CLOUD_URL = "https://obs.eu-de.otc.t-systems.com";
 
 
@@ -131,7 +128,7 @@ public class OtcTransferEndToEndTest {
         allowedTransferTypes.add(Json.createValue(ObsBucketSchema.TRANSFERTYPE_PUSH));
 
         JsonObject dataPlaneRequestBody = Json.createObjectBuilder().add("@context", Json.createObjectBuilder().add("@vocab", "https://w3id.org/edc/v0.0.1/ns/"))
-                .add("@id", "http-push-provider-dataplane")
+                .add("@id", "http-pull-provider-dataplane")
                 .add("url", PROVIDER.getControlEndpoint().getUrl().toString().concat("/transfer"))
                 .add("allowedSourceTypes", allowedSourceTypes.build())
                 .add("allowedDestTypes", allowedDestTypes.build())
@@ -142,12 +139,11 @@ public class OtcTransferEndToEndTest {
         createResourcesOnProvider(assetId, sourceAddress(sourceBucket, prefix));
 
         var transferType = ObsBucketSchema.TRANSFERTYPE_PUSH;
-        var offer = getOfferForAsset(PROVIDER, assetId);
-        var contractAggId = CONSUMER.negotiateContract(PROVIDER, offer);
-        var transferProcessId = CONSUMER.initiateTransfer(PROVIDER, contractAggId, null, obsSink(destBucket, prefix), transferType);
+        var transferProcessId = CONSUMER.requestAssetFrom(assetId, PROVIDER).withDestination(obsSink(destBucket, prefix)).withTransferType(transferType).execute();
+
         await().atMost(TIMEOUT).untilAsserted(() -> {
             var state = CONSUMER.getTransferProcessState(transferProcessId);
-            assertThat(TransferProcessStates.valueOf(state).code()).isGreaterThanOrEqualTo(STARTED.code());
+            assertThat(state).isEqualTo(STARTED.name());
         });
 
         List<ObsObject> consumerObsObjectList = consumerClient.listObjects(destBucket).getObjects();
@@ -155,34 +151,20 @@ public class OtcTransferEndToEndTest {
             assertThat(consumerObsObjectList)
                     .allSatisfy(obsObject -> assertThat(obsObject.getObjectKey()).isEqualTo(TESTFILE_NAME));
         }
-        try {
-            TimeUnit.SECONDS.sleep(20);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        cleanup();
     }
 
+    @AfterEach
     void cleanup() {
         cleanResource(providerClient, sourceBucket);
         cleanResource(consumerClient, destBucket);
     }
 
-    private JsonObject getOfferForAsset(Participant provider, String assetId) {
-        JsonObject dataset = PROVIDER.getDatasetForAsset(provider, assetId);
-        JsonObject policy = ((JsonValue) dataset.getJsonArray("http://www.w3.org/ns/odrl/2/hasPolicy").get(0)).asJsonObject();
-        return Json.createObjectBuilder(policy).add("http://www.w3.org/ns/odrl/2/assigner", Json.createObjectBuilder().add("@id", provider.getId())).add("http://www.w3.org/ns/odrl/2/target", Json.createObjectBuilder().add("@id", (JsonValue) dataset.get("@id"))).build();
-    }
 
     void cleanResource(ObsClient obsClient, String bucketName) {
-        try {
-            if (obsClient.headBucket(bucketName)) {
-                obsClient.listObjects(bucketName).getObjects()
-                        .forEach(obj -> obsClient.deleteObject(bucketName, obj.getObjectKey()));
-                obsClient.deleteBucket(bucketName);
-            }
-        } catch (Exception e) {
-            System.out.println("--> error : " + e.getMessage());
+        if (obsClient.headBucket(bucketName)) {
+            obsClient.listObjects(bucketName).getObjects()
+                    .forEach(obj -> obsClient.deleteObject(bucketName, obj.getObjectKey()));
+            obsClient.deleteBucket(bucketName);
         }
     }
 
