@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Gradle: org.eclipse.edc:token-spi:0.8.2-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Gradle: com.nimbusds:nimbus-jose-jwt:9.40" level="project" />
+    <orderEntry type="module" module-name="jwt-signer-spi" />
+    <orderEntry type="library" name="Gradle: org.eclipse.edc:core-spi:0.8.2-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Gradle: org.eclipse.edc:boot-spi:0.8.2-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Gradle: org.eclipse.edc:runtime-metamodel:0.8.2-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Gradle: org.eclipse.edc:keys-spi:0.8.2-SNAPSHOT" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MAVEN_REPOSITORY$/org/jetbrains/annotations/24.0.0/annotations-24.0.0.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module" module-name="crypto-common-lib" />
+    <orderEntry type="library" name="Gradle: org.assertj:assertj-core:3.26.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.junit.jupiter:junit-jupiter-api:5.11.0" level="project" />
+    <orderEntry type="module" module-name="components.spi.common.jwt-signer-spi.main" />
+    <orderEntry type="library" name="Gradle: org.mockito:mockito-core:5.12.0" level="project" />
+  </component>
+</module>

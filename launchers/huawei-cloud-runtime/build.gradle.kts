@@ -25,6 +25,8 @@ dependencies {
     runtimeOnly(project(":extensions:control-plane:store"))
     runtimeOnly(project(":extensions:control-plane:provision-obs"))
     runtimeOnly(project(":extensions:data-plane:data-plane-obs"))
+    runtimeOnly(project(":extensions:data-plane:data-plane-iam"))
+
     runtimeOnly(libs.edc.sql.pool.apachecommons)
     runtimeOnly(libs.edc.core.controlplane)
     runtimeOnly(libs.edc.core.dataplane)
@@ -63,3 +65,10 @@ application {
     mainClass.set("org.eclipse.edc.boot.system.runtime.BaseRuntime")
 }
 
+tasks.withType<Tar>{
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType<Zip>{
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
